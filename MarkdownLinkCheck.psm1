@@ -3,7 +3,7 @@ function Get-BrokenMarkdownLink
     [CmdletBinding()]
     param(
         [Parameter(ValueFromPipeline=$true)]
-        [string[]]$Path,
+        [string[]]$Path = '.',
 
         [switch]$Throw
     )
