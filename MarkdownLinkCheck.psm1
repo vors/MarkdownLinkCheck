@@ -1,11 +1,13 @@
-function Get-BrokenMarkdownLink
+function Get-MarkdownLink
 {
     [CmdletBinding()]
     param(
         [Parameter(ValueFromPipeline=$true)]
         [string[]]$Path = '.',
 
-        [switch]$Throw
+        [switch]$ThrowOnBroken,
+
+        [switch]$BrokenOnly
     )
 
     begin
@@ -30,17 +32,19 @@ function Get-BrokenMarkdownLink
             $s = Get-Content -Raw $File
             $ast = [Markdig.Markdown]::Parse($s, $pipeline)
             $links = $ast.Inline | ? {$_ -is [Markdig.Syntax.Inlines.LinkInline]}
-            $brokenLinks = $links | ? {
+            $links | % {
                 $url = $_.Url
-                if (Test-LinkAsUri $url) 
-                { 
+                $isBroken = if (Test-LinkAsUri $url) { 
                     $false 
                 }
-                else
-                {
+                else {
                     -not (Test-LinkAsRelative $url $root)
                 }
+
+                Add-Member -InputObject $_ -MemberType NoteProperty -Name IsBroken -Value $isBroken
             }
+
+            $brokenLinks = $links | ? {$_.IsBroken}
 
             if ($brokenLinks)
             {
@@ -53,7 +57,11 @@ function Get-BrokenMarkdownLink
             }
 
             # format and return
-            $result = $brokenLinks | Select-Object -Property Content, Url, Line, Column, Span
+            if ($BrokenOnly)
+            {
+                $links = $brokenLinks
+            }
+            $result = $links | Select-Object -Property Content, Url, IsBroken, Line, Column, Span
             $result | Add-Member -MemberType NoteProperty -Name Path -Value $File
             $result
         }
