@@ -17,20 +17,21 @@ Usage
 To check all markdown links in your project, run these commands in the root of your repo
 
 ```powershell
+# load the module
 > Import-Module MarkdownLinkCheck
-> Get-BrokenMarkdownLink
+> Get-MarkdownLink -BrokenOnly
 ```
 
 You can pass path as a parameter
 
 ```powershell
-> Get-BrokenMarkdownLink -Path .\docs
+> Get-MarkdownLink -BrokenOnly -Path .\docs
 ```
 
 If you want to use the module in CI, you may find useful ability to throw exception,
 if any broken links are found
 
 ```powershell
-> Get-BrokenMarkdownLink -Throw
+> Get-MarkdownLink -BrokenOnly -ThrowOnBroken
 ```
 
