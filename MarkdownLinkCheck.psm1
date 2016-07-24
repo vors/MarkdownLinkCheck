@@ -42,6 +42,8 @@ function Get-MarkdownLink
                 }
 
                 Add-Member -InputObject $_ -MemberType NoteProperty -Name IsBroken -Value $isBroken
+                Add-Member -InputObject $_ -MemberType NoteProperty -Name Text -Value $_.Content.ToString()
+                Add-Member -InputObject $_ -MemberType NoteProperty -Name Path -Value $File
             }
 
             $brokenLinks = $links | ? {$_.IsBroken}
@@ -61,8 +63,8 @@ function Get-MarkdownLink
             {
                 $links = $brokenLinks
             }
-            $result = $links | Select-Object -Property Content, Url, IsBroken, Line, Column, Span
-            $result | Add-Member -MemberType NoteProperty -Name Path -Value $File
+
+            $result = $links | Select-Object -Property Path, Text, Url, IsBroken, Line, Column, Span
             $result
         }
 
