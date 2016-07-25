@@ -34,7 +34,12 @@ function Get-MarkdownLink
             $links = $ast.Inline | ? {$_ -is [Markdig.Syntax.Inlines.LinkInline]}
             $links | % {
                 $url = $_.Url
-                $isBroken = if (Test-LinkAsUri $url) { 
+                $isAbsolute = Test-LinkAsUri $url
+
+                $isBroken = if ($isAbsolute) {
+                    # we probably can add a switch to check absolute URIs accessibility,
+                    # but it's hard due to the random network problems and liquid nature
+                    # of the internet.
                     $false 
                 }
                 else {
@@ -42,6 +47,7 @@ function Get-MarkdownLink
                 }
 
                 Add-Member -InputObject $_ -MemberType NoteProperty -Name IsBroken -Value $isBroken
+                Add-Member -InputObject $_ -MemberType NoteProperty -Name IsAbsolute -Value $isAbsolute
                 Add-Member -InputObject $_ -MemberType NoteProperty -Name Text -Value $_.Content.ToString()
                 Add-Member -InputObject $_ -MemberType NoteProperty -Name Path -Value $File
             }
@@ -64,7 +70,7 @@ function Get-MarkdownLink
                 $links = $brokenLinks
             }
 
-            $result = $links | Select-Object -Property Path, Text, Url, IsBroken, Line, Column, Span
+            $result = $links | Select-Object -Property Path, Text, Url, IsBroken, IsAbsolute, Line, Column, Span
             $result
         }
 
