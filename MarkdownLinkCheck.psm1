@@ -54,14 +54,11 @@ function Get-MarkdownLink
 
             $brokenLinks = $links | ? {$_.IsBroken}
 
+            Write-Verbose "Found $($links.Count) links, $($brokenLinks.Count) broken links in $File"
+
             if ($brokenLinks)
             {
-                Write-Verbose "Found $($brokenLinks.Count) broken links in $File"
                 $hasBroken[0] = $true
-            }
-            else 
-            {
-                Write-Verbose "Found no broken links in $File"
             }
 
             # format and return
@@ -98,6 +95,54 @@ function Get-MarkdownLink
         {
             throw "There are broken markdown links and Throw switch is specified"
         } 
+    }
+}
+
+function Get-ChildItemViaLink
+{
+    [CmdletBinding()]
+    param(
+        [Parameter(ValueFromPipeline=$true)]
+        [string[]]$Path = '.'
+    )
+
+    process
+    {
+        function iterate
+        {
+            param(
+                [string[]]$Path
+            )
+
+            $links = Get-MarkdownLink -Path $Path | ? {
+                (-not $_.IsAbsolute) -and (-not $_.IsBroken) -and ($_.Path) -and ($_.Url)
+            }
+            Write-Verbose "Found $($links.Count) links to process in $Path"
+            $links | % {
+                # ignore paragraph specification
+                $url = $_.Url.Split('#')[0]
+                $dest = (Resolve-Path (Join-Path (Split-Path $_.Path) $url)).Path
+                if (Test-Path -PathType Leaf $dest)
+                {
+                    if (-not ($queue -contains $dest))
+                    {
+                        $queue.Add($dest)
+                    }
+                }
+            }
+        }
+
+        $queue = New-Object 'System.Collections.Generic.List[string]'
+        $index = 0
+
+        iterate $Path
+        while ($index -lt $queue.Count)
+        {
+            iterate $queue[$index++]
+        }
+
+        # return
+        $queue | Get-ChildItem
     }
 }
 
