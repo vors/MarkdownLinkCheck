@@ -30,6 +30,12 @@ function Get-MarkdownLink
 
             $root = Split-Path $File
             $s = Get-Content -Raw $File
+            if (-not $s)
+            {
+                Write-Verbose "$File is empty"
+                return
+            }
+
             $ast = [Markdig.Markdown]::Parse($s, $pipeline)
             $links = $ast.Inline | ? {$_ -is [Markdig.Syntax.Inlines.LinkInline]}
             $links | % {
