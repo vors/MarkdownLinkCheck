@@ -37,8 +37,8 @@ function Get-MarkdownLink
             }
 
             $ast = [Markdig.Markdown]::Parse($s, $pipeline)
-            $links = $ast.Inline | ? {$_ -is [Markdig.Syntax.Inlines.LinkInline]}
-            $links | % {
+            $rawLinks = $ast.Inline | ? {$_ -is [Markdig.Syntax.Inlines.LinkInline]}
+            $links = $rawLinks | % {
                 $url = $_.Url
                 $isAbsolute = Test-LinkAsUri $url
 
@@ -52,10 +52,16 @@ function Get-MarkdownLink
                     -not (Test-LinkAsRelative $url $root)
                 }
 
-                Add-Member -InputObject $_ -MemberType NoteProperty -Name IsBroken -Value $isBroken
-                Add-Member -InputObject $_ -MemberType NoteProperty -Name IsAbsolute -Value $isAbsolute
-                Add-Member -InputObject $_ -MemberType NoteProperty -Name Text -Value $_.Content.ToString()
-                Add-Member -InputObject $_ -MemberType NoteProperty -Name Path -Value $File
+                # yeild
+                New-Object -TypeName PSObject -Property @{
+                    IsBroken = $isBroken
+                    IsAbsolute = $isAbsolute
+                    Text = $_.Content.ToString()
+                    Path = $File
+                    Url = $_.Url
+                    Line = $_.Line
+                    Column = $_.Column
+                }
             }
 
             $brokenLinks = $links | ? {$_.IsBroken}
@@ -73,7 +79,7 @@ function Get-MarkdownLink
                 $links = $brokenLinks
             }
 
-            $result = $links | Select-Object -Property Path, Text, Url, IsBroken, IsAbsolute, Line, Column, Span
+            $result = $links | Select-Object -Property Path, Text, Url, IsBroken, IsAbsolute, Line, Column
             $result
         }
 
