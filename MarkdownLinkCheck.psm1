@@ -56,7 +56,7 @@ function Get-MarkdownLink
                 New-Object -TypeName PSObject -Property @{
                     IsBroken = $isBroken
                     IsAbsolute = $isAbsolute
-                    Text = $_.Content.ToString()
+                    Text = if ($_.Content) { $_.Content.ToString() } else { '' }
                     Path = $File
                     Url = $_.Url
                     Line = $_.Line
