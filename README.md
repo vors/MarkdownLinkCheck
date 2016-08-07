@@ -11,6 +11,15 @@ This is a very early work.
 Markdig.dll committed directly to this repo to make build process simpler.
 It should be done more elegantly in the future.
 
+Install
+-------
+
+From the [gallery](https://www.powershellgallery.com/)
+
+```powershell
+> Install-Module MarkdownLinkCheck -Scope CurrentUser
+```
+
 Usage
 -----
 
