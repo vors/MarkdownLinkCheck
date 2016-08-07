@@ -59,8 +59,8 @@ function Get-MarkdownLink
                     Text = if ($_.Content) { $_.Content.ToString() } else { '' }
                     Path = $File
                     Url = $_.Url
-                    Line = $_.Line
-                    Column = $_.Column
+                    Line = $_.Line + 1
+                    Column = $_.Column + 1
                 }
             }
 
