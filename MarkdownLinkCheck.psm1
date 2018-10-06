@@ -7,7 +7,9 @@ function Get-MarkdownLink
 
         [switch]$ThrowOnBroken,
 
-        [switch]$BrokenOnly
+        [switch]$BrokenOnly,
+
+        [switch]$CaseSensitive
     )
 
     begin
@@ -16,6 +18,7 @@ function Get-MarkdownLink
         # use UsePreciseSourceLocation for better error reporting
         $pipeline = [Markdig.MarkdownExtensions]::UsePreciseSourceLocation($builder).Build()
         $hasBroken = @($false)
+        $CaseSensitiveChecks = $CaseSensitive.IsPresent
     }
 
     process
@@ -175,6 +178,32 @@ function Test-LinkAsUri
     }
 }
 
+function Get-CaseSensitivePath
+{
+    param($currentPath)
+
+    $pathInfo = [System.IO.DirectoryInfo]$currentPath
+    $parent = $pathInfo.Parent
+
+    if($null -eq $parent)
+    {
+        return $pathInfo.Name
+    }
+
+    $ParentCaseSensitivePath = Get-CaseSensitivePath $parent
+    $LeafCaseSensitivePath = if($currentPath -is [System.IO.DirectoryInfo])
+                            {
+                                $parent.GetDirectories($pathInfo.Name).Name
+                            }
+                            else
+                            {
+                                $parent.GetFiles($pathInfo.Name).Name
+                            }
+    return Join-Path $ParentCaseSensitivePath $LeafCaseSensitivePath
+}
+
+
+
 function Test-LinkAsRelative
 {
     param(
@@ -186,5 +215,13 @@ function Test-LinkAsRelative
     $link = $link.Split('#')[0]
     
     $relativePath = Join-Path $root $link
-    return (Test-Path $relativePath)
+    $PathFound = Test-Path $relativePath
+
+    if($CaseSensitiveChecks)
+    {
+        $caseSensitivePath = Get-CaseSensitivePath -currentPath $relativePath
+        $PathFound = $PathFound -and ($relativePath -ceq $CaseSensitive)
+    }
+
+    return $PathFound
 }
