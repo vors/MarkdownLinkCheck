@@ -191,9 +191,8 @@ function Test-LinkAsRelative
     $relativePath = Join-Path $root $link
     if (Test-Path $relativePath) {
         if ($caseSensitive) {
-            $linkName = (Get-Item (Join-Path $root $link)).Name
-            $realName = (Get-ChildItem $root -Recurse -Filter $linkName).Name
-            return $linkName -ceq $realname
+            $linkName = Split-Path $relativePath -Leaf
+            return (Get-ChildItem (Split-Path $relativePath) | Where-Object Name -ceq $linkName)
         } else {return $true}
     } else {return $false}
 }
