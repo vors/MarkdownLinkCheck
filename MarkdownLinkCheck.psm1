@@ -7,7 +7,9 @@ function Get-MarkdownLink
 
         [switch]$ThrowOnBroken,
 
-        [switch]$BrokenOnly
+        [switch]$BrokenOnly,
+
+        [switch]$CaseSensitive
     )
 
     begin
@@ -46,10 +48,10 @@ function Get-MarkdownLink
                     # we probably can add a switch to check absolute URIs accessibility,
                     # but it's hard due to the random network problems and liquid nature
                     # of the internet.
-                    $false 
+                    $false
                 }
                 else {
-                    -not (Test-LinkAsRelative $url $root)
+                    -not (Test-LinkAsRelative $url $root -caseSensitive:$CaseSensitive)
                 }
 
                 # yeild
@@ -94,19 +96,19 @@ function Get-MarkdownLink
             {
                 handleOneFile $_
             }
-            else 
+            else
             {
-                throw "$_ is not a valid path"    
+                throw "$_ is not a valid path"
             }
         }
     }
 
-    end 
+    end
     {
         if ($Throw -and $hasBroken[0])
         {
             throw "There are broken markdown links and Throw switch is specified"
-        } 
+        }
     }
 }
 
@@ -164,14 +166,14 @@ function Test-LinkAsUri
         [string]$link
     )
 
-    try 
+    try
     {
-        $uri = [uri]::new($link) 
+        $uri = [uri]::new($link)
         return $uri.IsAbsoluteUri
     }
-    catch 
+    catch
     {
-        return $false    
+        return $false
     }
 }
 
@@ -179,12 +181,32 @@ function Test-LinkAsRelative
 {
     param(
         [string]$link,
-        [string]$root
+        [string]$root,
+        [switch]$caseSensitive
     )
 
     # ignore paragraph specification
     $link = $link.Split('#')[0]
-    
+
     $relativePath = Join-Path $root $link
-    return (Test-Path $relativePath)
+    if (-not(Test-Path $relativePath)) {return $false} # If it's not there, just stop
+
+    if ($caseSensitive) {
+        $rootdir = Get-Item $root # we don't care about checking above the root
+        $canonical = Get-Item ($relativePath)
+        Write-Debug "working upwards from $canonical to $($rootdir.FullName)"
+
+        While ((Join-Path $canonical '') -ne (Join-Path $rootdir.FullName '')) {
+            Write-Debug "Checking $($canonical.FullName)"
+            $parent = Split-Path $canonical
+            Write-Debug "Directory: $($Parent), leaf: $($canonical.Name)"
+            if (get-childitem $Parent | where Name -ceq $canonical.Name) {
+                # matches, keep checking
+                $canonical = Get-Item $Parent
+                Write-Debug "Case matches, moving up to $canonical"
+            } else {return $false} # no match
+        }
+    }
+
+    return $true # not case sensitive, or checked all the way up
 }
