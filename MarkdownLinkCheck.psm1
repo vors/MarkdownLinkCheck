@@ -189,10 +189,24 @@ function Test-LinkAsRelative
     $link = $link.Split('#')[0]
 
     $relativePath = Join-Path $root $link
-    if (Test-Path $relativePath) {
-        if ($caseSensitive) {
-            $linkName = Split-Path $relativePath -Leaf
-            return (Get-ChildItem (Split-Path $relativePath) | Where-Object Name -ceq $linkName)
-        } else {return $true}
-    } else {return $false}
+    if (-not(Test-Path $relativePath)) {return $false} # If it's not there, just stop
+
+    if ($caseSensitive) {
+        $rootdir = Get-Item $root # we don't care about checking above the root
+        $canonical = Get-Item ($relativePath)
+        Write-Debug "working upwards from $canonical to $($rootdir.FullName)"
+
+        While ((Join-Path $canonical '') -ne (Join-Path $rootdir.FullName '')) {
+            Write-Debug "Checking $($canonical.FullName)"
+            $parent = Split-Path $canonical
+            Write-Debug "Directory: $($Parent), leaf: $($canonical.Name)"
+            if (get-childitem $Parent | where Name -ceq $canonical.Name) {
+                # matches, keep checking
+                $canonical = Get-Item $Parent
+                Write-Debug "Case matches, moving up to $canonical"
+            } else {return $false} # no match
+        }
+    }
+
+    return $true # not case sensitive, or checked all the way up
 }
